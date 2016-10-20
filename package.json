@@ -1,0 +1,47 @@
+{
+  "name": "dexie-relationships",
+  "version": "1.0.0",
+  "description": "Dexie relationship plugin",
+  "main": "dist/dexie-relationships.js",
+  "directories": {
+    "test": "tests"
+  },
+  "dependencies": {
+  },
+  "devDependencies": {
+    "babel-cli": "^6.16.0",
+    "babel-loader": "^6.2.5",
+    "babel-preset-es2015": "^6.16.0",
+    "chai": "^3.5.0",
+    "eslint": "^3.8.1",
+    "eslint-config-standard": "^6.2.0",
+    "eslint-plugin-promise": "^3.3.0",
+    "eslint-plugin-standard": "^2.0.1",
+    "mocha": "^3.1.2",
+    "webpack": "^1.13.2"
+  },
+  "scripts": {
+    "build": "babel --presets es2015 src/index.js -o dist/dexie-relationships.js",
+    "test": "npm run eslint && npm run mocha",
+    "eslint": "eslint src",
+    "mocha": "./node_modules/.bin/mocha --compilers js:babel-core/register --reporter spec"
+  },
+  "babel": {
+    "presets": ["es2015"]
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/ignasbernotas/dexie-relationships.git"
+  },
+  "keywords": [
+    "dexie",
+    "relationships",
+    "plugin"
+  ],
+  "author": "Ignas Bernotas",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/ignasbernotas/dexie-relationships/issues"
+  },
+  "homepage": "https://github.com/ignasbernotas/dexie-relationships#readme"
+}

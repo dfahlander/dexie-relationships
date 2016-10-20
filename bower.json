@@ -1,0 +1,15 @@
+{
+  "name": "dexie-relationships",
+  "description": "Dexie relationship plugin",
+  "main": "dist/dexie-relationships.js",
+  "authors": [
+    "Ignas Bernotas"
+  ],
+  "license": "MIT",
+  "keywords": [
+    "dexie",
+    "relationships",
+    "plugin"
+  ],
+  "homepage": "https://github.com/ignasbernotas/dexie-relationships"
+}
