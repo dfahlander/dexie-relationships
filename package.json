@@ -27,11 +27,6 @@
     "eslint": "eslint src",
     "mocha": "./node_modules/.bin/mocha --compilers js:babel-core/register --reporter spec"
   },
-  "babel": {
-    "presets": [
-      "es2015"
-    ]
-  },
   "repository": {
     "type": "git",
     "url": "git+https://github.com/ignasbernotas/dexie-relationships.git"
