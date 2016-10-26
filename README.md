@@ -50,7 +50,7 @@ db.project_members.add({name: 'Member #3', project_id: 1})
 #### Usage
 
 ```javascript
-db.with({
+db.projects.with({
   'settings': 'project_settings',
   'members': 'project_members'
 }).then(rows => console.log(rows))
