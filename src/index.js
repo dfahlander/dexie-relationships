@@ -1,5 +1,6 @@
 import Dexie from 'dexie'
 import SchemaParser from './schema-parser'
+import {isIndexableType} from './utils'
 
 const Relationships = (db) => {
   // Use Dexie.Promise to ensure transaction safety.
@@ -24,7 +25,6 @@ const Relationships = (db) => {
    * @returns {Dexie.Promise}
    */
   db.Collection.prototype.with = function (relationships) {
-    const self = this
     const baseTable = this._ctx.table.name
     const databaseTables = db._allTables
 
@@ -52,6 +52,48 @@ const Relationships = (db) => {
           foreign: columns[0]
         }
       }
+    })
+
+    let foreignTableNames = Object.keys(usableForeignTables)
+
+    return this.toArray().then(rows => {
+      //
+      // Extract the mix of all related keys in all rows
+      //
+      let queries = foreignTableNames
+        .map (tableName => {
+          // For each foreign table, query all items that any row refers to
+          let foreignTable = usableForeignTables[tableName]
+          let allRelatedKeys = rows
+            .map(row => row[foreignTable.foreign.targetIndex])
+            .filter (isIndexableType)
+
+          // Build the Collection to retrieve all related items 
+          return databaseTables[table]
+            .where (foreignTable.foreign.index)
+            .anyOf (allRelatedKeys)
+        })
+      
+      // Execute queries in parallell
+      let queryPromises = queries.map(query => query.toArray());
+
+      //
+      // Await all results and then try mapping each response
+      // with its corresponding row and attach related items onto each row
+      // 
+      return Promise.all(queryPromises).then (queryResults => {
+        foreignTableNames.forEach((tableName, idx) => {
+          let foreignTable = usableForeignTables[tableName]
+          let result = queryResults[idx]
+          let targetIndex = foreignTable.foreign.targetIndex
+          let foreignIndex = foreignTable.foreign.index
+
+        });
+      });
+      return Promise.all (queries.map(query => query.toArray())).then(results => {
+        let {table, allRelatedObjs} = results;
+
+      })
     })
 
     return new Promise((resolve) => {
