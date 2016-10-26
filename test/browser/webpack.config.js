@@ -2,11 +2,11 @@ var path = require('path');
 var webpack = require('webpack');
 
 module.exports = {
-  entry: './src/index.js',
+  entry: './all-browser-tests.js',
   externals: ['dexie'],
   output: {
-    path: path.resolve(__dirname, 'dist'),
-    filename: 'dexie-relationships.js'
+    path: __dirname,
+    filename: 'bundle.js'
   },
   module: {
     loaders: [
