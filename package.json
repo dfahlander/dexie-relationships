@@ -1,6 +1,6 @@
 {
   "name": "dexie-relationships",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "description": "Dexie relationship plugin",
   "main": "dist/dexie-relationships.js",
   "directories": {
