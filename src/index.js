@@ -2,6 +2,9 @@ import Dexie from 'dexie'
 import SchemaParser from './schema-parser'
 
 const Relationships = (db) => {
+
+  let Promise = Dexie.Promise; // Safe to use within transactions. 
+
   /**
    * Iterate through all items and collect related records
    *
