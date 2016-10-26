@@ -6,7 +6,9 @@
   "directories": {
     "test": "tests"
   },
-  "dependencies": {},
+  "peerDependencies": {
+    "dexie": "^2.0.0-beta.3"
+  },
   "devDependencies": {
     "babel-cli": "^6.16.0",
     "babel-core": "^6.18.0",
@@ -22,7 +24,7 @@
     "webpack": "^1.13.2"
   },
   "scripts": {
-    "build": "webpack",
+    "build": "webpack && cd test/browser && webpack",
     "test": "npm run eslint && npm run mocha",
     "eslint": "eslint src",
     "mocha": "./node_modules/.bin/mocha --compilers js:babel-core/register --reporter spec"

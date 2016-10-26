@@ -1,10 +1,10 @@
-import Dexie from 'dexie'
 import SchemaParser from './schema-parser'
 import {isIndexableType} from './utils'
 
 const Relationships = (db) => {
+  const Dexie = db.constructor
   // Use Dexie.Promise to ensure transaction safety.
-  let Promise = Dexie.Promise
+  const Promise = Dexie.Promise
 
   /**
    * Iterate through all items and collect related records
@@ -61,70 +61,58 @@ const Relationships = (db) => {
       // Extract the mix of all related keys in all rows
       //
       let queries = foreignTableNames
-        .map (tableName => {
+        .map(tableName => {
           // For each foreign table, query all items that any row refers to
           let foreignTable = usableForeignTables[tableName]
           let allRelatedKeys = rows
             .map(row => row[foreignTable.foreign.targetIndex])
-            .filter (isIndexableType)
+            .filter(isIndexableType)
 
-          // Build the Collection to retrieve all related items 
-          return databaseTables[table]
-            .where (foreignTable.foreign.index)
-            .anyOf (allRelatedKeys)
+          // Build the Collection to retrieve all related items
+          return databaseTables[tableName]
+            .where(foreignTable.foreign.index)
+            .anyOf(allRelatedKeys)
         })
-      
+
       // Execute queries in parallell
-      let queryPromises = queries.map(query => query.toArray());
+      let queryPromises = queries.map(query => query.toArray())
 
       //
       // Await all results and then try mapping each response
       // with its corresponding row and attach related items onto each row
-      // 
-      return Promise.all(queryPromises).then (queryResults => {
+      //
+      return Promise.all(queryPromises).then(queryResults => {
         foreignTableNames.forEach((tableName, idx) => {
           let foreignTable = usableForeignTables[tableName]
           let result = queryResults[idx]
           let targetIndex = foreignTable.foreign.targetIndex
           let foreignIndex = foreignTable.foreign.index
+          let column = foreignTable.column
 
-        });
-      });
-      return Promise.all (queries.map(query => query.toArray())).then(results => {
-        let {table, allRelatedObjs} = results;
+          // Create a lookup by targetIndex (normally 'id')
+          // and set the column onto the target
+          let lookup = {}
+          rows.forEach(row => {
+            let arrayProperty = []
+            row[column] = arrayProperty
+            lookup[row[targetIndex]] = arrayProperty
+          })
 
-      })
-    })
+          // Populate column on each row
+          result.forEach(record => {
+            let foreignKey = record[foreignIndex]
+            let arrayProperty = lookup[foreignKey]
+            if (!arrayProperty) {
+              throw new Error(
+                `Could not lookup foreign key where ` +
+                `${tableName}.${foreignIndex} == ${baseTable}.${column}. ` +
+                `The content of the failing key was: ${JSON.stringify(foreignKey)}.`)
+            }
 
-    return new Promise((resolve) => {
-      self.toArray().then(rows => {
-        let queue = []
-
-        // loop through all rows and collect all data from the related table
-        rows.forEach((row) => {
-          let tables = Object.keys(usableForeignTables)
-
-          tables.forEach(table => {
-            let relatedTable = usableForeignTables[table]
-
-            let promise = databaseTables[table]
-              .where(relatedTable.foreign.index)
-              .equals(row[relatedTable.foreign.targetIndex])
-              .toArray()
-              .then(relations => {
-                row[relatedTable.column] = relations
-              })
-
-            queue.push(promise)
+            arrayProperty.push(record)
           })
         })
-
-        // we need to wait until all data is retrieved
-        // once it's there we can resolve the promise
-        Promise.all(queue).then(() => {
-          resolve(rows)
-        })
-      })
+      }).then(() => rows)
     })
   }
 
@@ -149,4 +137,4 @@ const Relationships = (db) => {
     })
 }
 
-Dexie.addons.push(Relationships)
+module.exports = Relationships
