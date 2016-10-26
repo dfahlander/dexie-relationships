@@ -2,8 +2,8 @@ import Dexie from 'dexie'
 import SchemaParser from './schema-parser'
 
 const Relationships = (db) => {
-
-  let Promise = Dexie.Promise; // Safe to use within transactions. 
+  // Use Dexie.Promise to ensure transaction safety.
+  let Promise = Dexie.Promise
 
   /**
    * Iterate through all items and collect related records
@@ -54,7 +54,7 @@ const Relationships = (db) => {
       }
     })
 
-    return new Dexie.Promise((resolve) => {
+    return new Promise((resolve) => {
       self.toArray().then(rows => {
         let queue = []
 
