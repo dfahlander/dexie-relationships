@@ -86,6 +86,8 @@
 	   * @returns {Dexie.Promise}
 	   */
 	  db.Collection.prototype.with = function (relationships) {
+	    var _this = this;
+	
 	    var baseTable = this._ctx.table.name;
 	    var databaseTables = db._allTables;
 	
@@ -94,26 +96,40 @@
 	
 	    // validate target tables and add them into our usable tables object
 	    (0, _keys2.default)(relationships).forEach(function (column) {
-	      var table = relationships[column];
+	      var tableOrIndex = relationships[column];
+	      var matchingIndex = _this._ctx.table.schema.idxByName[tableOrIndex];
 	
-	      if (!databaseTables.hasOwnProperty(table)) {
-	        throw new Error('Relationship table ' + table + ' doesn\'t exist.');
-	      }
-	
-	      if (!databaseTables[table].schema.hasOwnProperty('foreignKeys')) {
-	        throw new Error('Relationship table ' + table + ' doesn\'t have foreign keys set.');
-	      }
-	
-	      // remove the foreign keys that don't link to the base table
-	      var columns = databaseTables[table].schema.foreignKeys.filter(function (column) {
-	        return column.targetTable === baseTable;
-	      });
-	
-	      if (columns.length > 0) {
-	        usableForeignTables[table] = {
+	      if (matchingIndex && matchingIndex.hasOwnProperty('foreignKey')) {
+	        var index = matchingIndex;
+	        usableForeignTables[index.foreignKey.targetTable] = {
 	          column: column,
-	          foreign: columns[0]
+	          index: index.foreignKey.targetIndex,
+	          targetIndex: index.foreignKey.index,
+	          oneToOne: true
 	        };
+	      } else {
+	        var table = tableOrIndex;
+	
+	        if (!databaseTables.hasOwnProperty(table)) {
+	          throw new Error('Relationship table ' + table + ' doesn\'t exist.');
+	        }
+	
+	        if (!databaseTables[table].schema.hasOwnProperty('foreignKeys')) {
+	          throw new Error('Relationship table ' + table + ' doesn\'t have foreign keys set.');
+	        }
+	
+	        // remove the foreign keys that don't link to the base table
+	        var columns = databaseTables[table].schema.foreignKeys.filter(function (column) {
+	          return column.targetTable === baseTable;
+	        });
+	
+	        if (columns.length > 0) {
+	          usableForeignTables[table] = {
+	            column: column,
+	            index: columns[0].index,
+	            targetIndex: columns[0].targetIndex
+	          };
+	        }
 	      }
 	    });
 	
@@ -127,11 +143,11 @@
 	        // For each foreign table, query all items that any row refers to
 	        var foreignTable = usableForeignTables[tableName];
 	        var allRelatedKeys = rows.map(function (row) {
-	          return row[foreignTable.foreign.targetIndex];
+	          return row[foreignTable.targetIndex];
 	        }).filter(_utils.isIndexableType);
 	
 	        // Build the Collection to retrieve all related items
-	        return databaseTables[tableName].where(foreignTable.foreign.index).anyOf(allRelatedKeys);
+	        return databaseTables[tableName].where(foreignTable.index).anyOf(allRelatedKeys);
 	      });
 	
 	      // Execute queries in parallell
@@ -147,28 +163,31 @@
 	        foreignTableNames.forEach(function (tableName, idx) {
 	          var foreignTable = usableForeignTables[tableName];
 	          var result = queryResults[idx];
-	          var targetIndex = foreignTable.foreign.targetIndex;
-	          var foreignIndex = foreignTable.foreign.index;
+	          var targetIndex = foreignTable.targetIndex;
+	          var foreignIndex = foreignTable.index;
 	          var column = foreignTable.column;
 	
 	          // Create a lookup by targetIndex (normally 'id')
 	          // and set the column onto the target
 	          var lookup = {};
 	          rows.forEach(function (row) {
-	            var arrayProperty = [];
-	            row[column] = arrayProperty;
-	            lookup[row[targetIndex]] = arrayProperty;
+	            lookup[row[targetIndex]] = row;
 	          });
 	
 	          // Populate column on each row
 	          result.forEach(function (record) {
 	            var foreignKey = record[foreignIndex];
-	            var arrayProperty = lookup[foreignKey];
-	            if (!arrayProperty) {
+	            var row = lookup[foreignKey];
+	            if (!row) {
 	              throw new Error('Could not lookup foreign key where ' + (tableName + '.' + foreignIndex + ' == ' + baseTable + '.' + column + '. ') + ('The content of the failing key was: ' + (0, _stringify2.default)(foreignKey) + '.'));
 	            }
 	
-	            arrayProperty.push(record);
+	            if (foreignTable.oneToOne) {
+	              row[column] = record;
+	            } else {
+	              var propValue = row[column];
+	              if (!propValue) row[column] = [record];else propValue.push(record);
+	            }
 	          });
 	        });
 	      }).then(function () {
@@ -190,6 +209,9 @@
 	      (0, _keys2.default)(outDbSchema).forEach(function (table) {
 	        if (foreignKeys.hasOwnProperty(table)) {
 	          outDbSchema[table].foreignKeys = foreignKeys[table];
+	          foreignKeys[table].forEach(function (fk) {
+	            outDbSchema[table].idxByName[fk.index].foreignKey = fk;
+	          });
 	        }
 	      });
 	

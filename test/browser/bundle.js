@@ -67,7 +67,8 @@
 	    var Promise = Dexie.Promise;
 	    var db = new Dexie('bands-simple', { addons: [DexieRelationships] });
 	    db.version(1).stores({
-	        bands: '\n            id,\n            name',
+	        genres: '\n            id,\n            name',
+	        bands: '\n            id,\n            name,\n            genreId -> genres.id',
 	        albums: '\n            id,\n            name,\n            bandId -> bands.id,\n            year'
 	    });
 	
@@ -75,14 +76,25 @@
 	        return db.delete().then(function () {
 	            return db.open();
 	        }).then(function () {
-	            return db.transaction('rw', db.bands, db.albums, function () {
+	            return db.transaction('rw', db.bands, db.albums, db.genres, function () {
+	                // Genres
+	                db.genres.bulkAdd([{
+	                    id: 1,
+	                    name: "Rock"
+	                }, {
+	                    id: 2,
+	                    name: "Schlager"
+	                }]);
+	
 	                // Bands
 	                db.bands.bulkAdd([{
 	                    id: 1,
-	                    name: 'Beatles'
+	                    name: 'Beatles',
+	                    genreId: 1
 	                }, {
 	                    id: 2,
-	                    name: 'Abba'
+	                    name: 'Abba',
+	                    genreId: 2
 	                }]);
 	
 	                // Albums
@@ -116,21 +128,49 @@
 	            return db.bands.where('name').equals('Beatles').with({
 	                albums: 'albums'
 	            }).then(function (bands) {
-	                _assert2.default.deepEqual([{
-	                    id: 1,
-	                    name: 'Beatles',
-	                    albums: [{
-	                        id: 1,
-	                        name: 'Abbey Road',
-	                        year: 1969,
-	                        bandId: 1
-	                    }, {
-	                        id: 2,
-	                        name: 'Let It Be',
-	                        year: 1970,
-	                        bandId: 1
-	                    }]
-	                }], bands);
+	                (0, _assert2.default)(bands.length == 1, "Should be one Beatles");
+	                var beatles = bands[0];
+	                (0, _assert2.default)(!!beatles.albums, "Should have got the foreign albums collection");
+	                (0, _assert2.default)(beatles.albums.length === 2, "Should have 2 albums in this db");
+	                (0, _assert2.default)(beatles.albums[0].name === "Abbey Road", "First albums should be 'Abbey Roead'");
+	                (0, _assert2.default)(beatles.albums[1].name === "Let It Be", "Second album should be 'Let It Be'");
+	            });
+	        });
+	    });
+	
+	    describe('one-to-one', function () {
+	        it('should be possible to retrieve entity with a foreign key to expand that foreign key', function () {
+	            return db.albums.where('year').between(1970, 1974, true, true).with({
+	                band: 'bandId'
+	            }).then(function (albums) {
+	                (0, _assert2.default)(albums.length === 2, "Should retrieve two albums between 1970 to 1974");
+	                var letItBe = albums[0],
+	                    waterloo = albums[1];
+	                (0, _assert2.default)(letItBe.name === "Let It Be", "First album should be 'Let It Be'");
+	                (0, _assert2.default)(!!letItBe.band, "Should get the band resolved with the query");
+	                (0, _assert2.default)(letItBe.band.name === "Beatles", "The band should be Beatles");
+	
+	                (0, _assert2.default)(waterloo.name === "Waterloo", "Second album should be 'Waterloo'");
+	                (0, _assert2.default)(!!waterloo.band, "Should get the band resolved with the query");
+	                (0, _assert2.default)(waterloo.band.name === "Abba", "The band should be Abba");
+	            });
+	        });
+	    });
+	
+	    describe('Multiple foreign keys of different kind', function () {
+	        it('Should be possible to retrieve entities with oneToOne as well as manyToOne relations', function () {
+	            return db.bands.where('name').equals('Beatles').with({
+	                albums: 'albums',
+	                genre: 'genreId'
+	            }).then(function (bands) {
+	                (0, _assert2.default)(bands.length == 1, "Should be one Beatles");
+	                var beatles = bands[0];
+	                (0, _assert2.default)(!!beatles.albums, "Should have got the foreign albums collection");
+	                (0, _assert2.default)(beatles.albums.length === 2, "Should have 2 albums in this db");
+	                (0, _assert2.default)(beatles.albums[0].name === "Abbey Road", "First albums should be 'Abbey Roead'");
+	                (0, _assert2.default)(beatles.albums[1].name === "Let It Be", "Second album should be 'Let It Be'");
+	                (0, _assert2.default)(!!beatles.genre, "Should have got the foreign genre entity");
+	                (0, _assert2.default)(beatles.genre.name === "Rock", "The genre should be 'Rock' (even though that could be questionable)");
 	            });
 	        });
 	    });
@@ -1498,6 +1538,8 @@
 	   * @returns {Dexie.Promise}
 	   */
 	  db.Collection.prototype.with = function (relationships) {
+	    var _this = this;
+	
 	    var baseTable = this._ctx.table.name;
 	    var databaseTables = db._allTables;
 	
@@ -1506,26 +1548,40 @@
 	
 	    // validate target tables and add them into our usable tables object
 	    (0, _keys2.default)(relationships).forEach(function (column) {
-	      var table = relationships[column];
+	      var tableOrIndex = relationships[column];
+	      var matchingIndex = _this._ctx.table.schema.idxByName[tableOrIndex];
 	
-	      if (!databaseTables.hasOwnProperty(table)) {
-	        throw new Error('Relationship table ' + table + ' doesn\'t exist.');
-	      }
-	
-	      if (!databaseTables[table].schema.hasOwnProperty('foreignKeys')) {
-	        throw new Error('Relationship table ' + table + ' doesn\'t have foreign keys set.');
-	      }
-	
-	      // remove the foreign keys that don't link to the base table
-	      var columns = databaseTables[table].schema.foreignKeys.filter(function (column) {
-	        return column.targetTable === baseTable;
-	      });
-	
-	      if (columns.length > 0) {
-	        usableForeignTables[table] = {
+	      if (matchingIndex && matchingIndex.hasOwnProperty('foreignKey')) {
+	        var index = matchingIndex;
+	        usableForeignTables[index.foreignKey.targetTable] = {
 	          column: column,
-	          foreign: columns[0]
+	          index: index.foreignKey.targetIndex,
+	          targetIndex: index.foreignKey.index,
+	          oneToOne: true
 	        };
+	      } else {
+	        var table = tableOrIndex;
+	
+	        if (!databaseTables.hasOwnProperty(table)) {
+	          throw new Error('Relationship table ' + table + ' doesn\'t exist.');
+	        }
+	
+	        if (!databaseTables[table].schema.hasOwnProperty('foreignKeys')) {
+	          throw new Error('Relationship table ' + table + ' doesn\'t have foreign keys set.');
+	        }
+	
+	        // remove the foreign keys that don't link to the base table
+	        var columns = databaseTables[table].schema.foreignKeys.filter(function (column) {
+	          return column.targetTable === baseTable;
+	        });
+	
+	        if (columns.length > 0) {
+	          usableForeignTables[table] = {
+	            column: column,
+	            index: columns[0].index,
+	            targetIndex: columns[0].targetIndex
+	          };
+	        }
 	      }
 	    });
 	
@@ -1539,11 +1595,11 @@
 	        // For each foreign table, query all items that any row refers to
 	        var foreignTable = usableForeignTables[tableName];
 	        var allRelatedKeys = rows.map(function (row) {
-	          return row[foreignTable.foreign.targetIndex];
+	          return row[foreignTable.targetIndex];
 	        }).filter(_utils.isIndexableType);
 	
 	        // Build the Collection to retrieve all related items
-	        return databaseTables[tableName].where(foreignTable.foreign.index).anyOf(allRelatedKeys);
+	        return databaseTables[tableName].where(foreignTable.index).anyOf(allRelatedKeys);
 	      });
 	
 	      // Execute queries in parallell
@@ -1559,28 +1615,31 @@
 	        foreignTableNames.forEach(function (tableName, idx) {
 	          var foreignTable = usableForeignTables[tableName];
 	          var result = queryResults[idx];
-	          var targetIndex = foreignTable.foreign.targetIndex;
-	          var foreignIndex = foreignTable.foreign.index;
+	          var targetIndex = foreignTable.targetIndex;
+	          var foreignIndex = foreignTable.index;
 	          var column = foreignTable.column;
 	
 	          // Create a lookup by targetIndex (normally 'id')
 	          // and set the column onto the target
 	          var lookup = {};
 	          rows.forEach(function (row) {
-	            var arrayProperty = [];
-	            row[column] = arrayProperty;
-	            lookup[row[targetIndex]] = arrayProperty;
+	            lookup[row[targetIndex]] = row;
 	          });
 	
 	          // Populate column on each row
 	          result.forEach(function (record) {
 	            var foreignKey = record[foreignIndex];
-	            var arrayProperty = lookup[foreignKey];
-	            if (!arrayProperty) {
+	            var row = lookup[foreignKey];
+	            if (!row) {
 	              throw new Error('Could not lookup foreign key where ' + (tableName + '.' + foreignIndex + ' == ' + baseTable + '.' + column + '. ') + ('The content of the failing key was: ' + (0, _stringify2.default)(foreignKey) + '.'));
 	            }
 	
-	            arrayProperty.push(record);
+	            if (foreignTable.oneToOne) {
+	              row[column] = record;
+	            } else {
+	              var propValue = row[column];
+	              if (!propValue) row[column] = [record];else propValue.push(record);
+	            }
 	          });
 	        });
 	      }).then(function () {
@@ -1602,6 +1661,9 @@
 	      (0, _keys2.default)(outDbSchema).forEach(function (table) {
 	        if (foreignKeys.hasOwnProperty(table)) {
 	          outDbSchema[table].foreignKeys = foreignKeys[table];
+	          foreignKeys[table].forEach(function (fk) {
+	            outDbSchema[table].idxByName[fk.index].foreignKey = fk;
+	          });
 	        }
 	      });
 	
