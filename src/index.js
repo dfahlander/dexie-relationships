@@ -34,10 +34,10 @@ const Relationships = (db) => {
     // validate target tables and add them into our usable tables object
     Object.keys(relationships).forEach((column) => {
       let tableOrIndex = relationships[column]
-      let matchingIndex = this._ctx.table.schema.idxByName[tableOrIndex];
+      let matchingIndex = this._ctx.table.schema.idxByName[tableOrIndex]
 
       if (matchingIndex && matchingIndex.hasOwnProperty('foreignKey')) {
-        let index = matchingIndex;
+        let index = matchingIndex
         usableForeignTables[index.foreignKey.targetTable] = {
           column: column,
           index: index.foreignKey.targetIndex,
@@ -45,7 +45,7 @@ const Relationships = (db) => {
           oneToOne: true
         }
       } else {
-        let table = tableOrIndex;
+        let table = tableOrIndex
 
         if (!databaseTables.hasOwnProperty(table)) {
           throw new Error('Relationship table ' + table + ' doesn\'t exist.')
@@ -99,8 +99,8 @@ const Relationships = (db) => {
         foreignTableNames.forEach((tableName, idx) => {
           let foreignTable = usableForeignTables[tableName]
           let result = queryResults[idx]
-          let targetIndex = foreignTable.targetIndex;
-          let foreignIndex = foreignTable.index;
+          let targetIndex = foreignTable.targetIndex
+          let foreignIndex = foreignTable.index
           let column = foreignTable.column
 
           // Create a lookup by targetIndex (normally 'id')
@@ -124,7 +124,7 @@ const Relationships = (db) => {
             if (foreignTable.oneToOne) {
               row[column] = record
             } else {
-              let propValue = row[column];
+              let propValue = row[column]
               if (!propValue) row[column] = [record]
               else propValue.push(record)
             }
@@ -149,7 +149,7 @@ const Relationships = (db) => {
         if (foreignKeys.hasOwnProperty(table)) {
           outDbSchema[table].foreignKeys = foreignKeys[table]
           foreignKeys[table].forEach(fk => {
-            outDbSchema[table].idxByName[fk.index].foreignKey = fk; 
+            outDbSchema[table].idxByName[fk.index].foreignKey = fk
           })
         }
       })
