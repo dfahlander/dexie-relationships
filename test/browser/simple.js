@@ -119,7 +119,29 @@ describe('simple', function () {
                 assert(beatles.albums[1].name === "Let It Be", "Second album should be 'Let It Be'")
                 assert(!!beatles.genre, "Should have got the foreign genre entity")
                 assert(beatles.genre.name === "Rock", "The genre should be 'Rock' (even though that could be questionable)");
-            });
+            })
+        })
+    })
+
+    describe('Navigation properties should be non-enumerable', () => {
+        it('should be possible to put back an object to indexedDB after ' +
+           'having retrieved it with navigation properties ' +
+           'without storing the navigation properties redundantly',
+        ()=>{
+            return db.bands.where('name').equals('Abba').with({albums: 'albums', genre: 'genreId'})
+            .then(bands => {
+                assert(bands.length === 1, "Should be one Abba");
+                let abba = bands[0]
+                assert (!!abba.albums, "Abba should have its 'albums' foreign collection")
+                assert (!!abba.genre, "Abba should have its 'genre' foreign property")
+                abba.customProperty = "Hello world"
+                return db.bands.put(abba)
+            }).then(()=>{
+                return db.bands.where('name').equals('Abba').first()
+            }).then(abba => {
+                assert(!abba.albums, "Abba should not have the 'albums' foreign collection stored redundantly")
+                assert(!abba.genre, "Abba should not have the 'genre' foreign property stored redundantly")
+            })
         })
     })
 })

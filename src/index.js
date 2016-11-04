@@ -121,12 +121,18 @@ const Relationships = (db) => {
                 `The content of the failing key was: ${JSON.stringify(foreignKey)}.`)
             }
 
-            if (foreignTable.oneToOne) {
-              row[column] = record
-            } else {
-              let propValue = row[column]
-              if (!propValue) row[column] = [record]
-              else propValue.push(record)
+            if (foreignTable.oneToOne || !row.hasOwnProperty(column)) {
+              // Set it as a non-enumerable property so that the object can be safely put back
+              // to indexeddb without storing relations redundantly (IndexedDB will only store "own non-
+              // enumerable properties")
+              Object.defineProperty(row, column, {
+                value: foreignTable.oneToOne ? record : [record],
+                enumerable: false,
+                configurable: true,
+                writable: true
+              })
+            } else if (!foreignTable.oneToOne) {
+              row[column].push(record)
             }
           })
         })
