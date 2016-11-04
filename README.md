@@ -25,86 +25,122 @@ API Example
 Note the use of `->` which sets the foreign keys.
 
 ```javascript
+import Dexie from 'dexie'
+import relationships from 'dexie-relationships'
+
+var db = new Dexie('MusicBands', {addons: [relationships]})
+
 db.version(1).stores({
-  projects: '++id',
-  project_settings: '++id, project_id -> projects.id',
-  project_members: '++id, project_id -> projects.id'
-})
+    genres: 'id, name',
+    bands: 'id, name, genreId -> genres.id',
+    albums: 'id, name, bandId -> bands.id, year'
+});
+
 ```
 
 #### Seed the data
 
 ```javascript
-db.projects.add({name: 'Project #1'})
-db.projects.add({name: 'Project #2'})
+db.transaction('rw', db.bands, db.albums, db.genres, () => {
+    // Genres
+    db.genres.bulkPut([{
+        id: 1,
+        name: "Rock"
+    },{
+        id: 2,
+        name: "Schlager"
+    }])
 
-db.project_settings.add({name: 'Setting #1', project_id: 1})
-db.project_settings.add({name: 'Setting #2', project_id: 2})
-db.project_settings.add({name: 'Setting #3', project_id: 1})
-
-db.project_members.add({name: 'Member #1', project_id: 1})
-db.project_members.add({name: 'Member #2', project_id: 2})
-db.project_members.add({name: 'Member #3', project_id: 1})
+    // Bands
+    db.bands.bulkPut([{
+        id: 1,
+        name: 'Beatles',
+        genreId: 1
+    },{
+        id: 2,
+        name: 'Abba',
+        genreId: 2
+    }])
+    
+    // Albums
+    db.albums.bulkPut([{
+        id: 1,
+        name: 'Abbey Road',
+        year: 1969,
+        bandId: 1
+    }, {
+        id: 2,
+        name: 'Let It Be',
+        year: 1970,
+        bandId: 1
+    }, {
+        id: 3,
+        name: 'Super Trouper',
+        bandId: 2,
+        year: 1980
+    }, {
+        id: 4,
+        name: 'Waterloo',
+        bandId: 2,
+        year: 1974
+    }])
+})
 ```
 
 #### Usage
 
 ```javascript
-db.projects.with({
-  'settings': 'project_settings',
-  'members': 'project_members'
-}).then(rows => console.log(rows))
+db.bands
+  .where('name').startsWithAnyOf('A', 'B') // can be replaced with your custom query
+  .with({albums: 'albums', genre: 'genreId'}) // makes referred items included
+  .then(bands => {
+      // Let's print the result:
+      bands.forEach (band => {
+          console.log (`Band Name: ${band.name}`)
+          console.log (`Genre: ${band.genre.name}`)
+          console.log (`Albums: ${JSON.stringify(band.albums, null, 4)}`)
+      });
+})
 ```
+
+*NOTE: The properties that are set onto the result ('albums' and 'genre' in this case)
+will not be visible when callilng JSON.stringify(band), because
+they are marked as non-enumerable. The reason for this is to prevent the properties to be
+redundantly stored back to the database if calling `db.bands.put(band)`.*
 
 #### Result
 
-```json
-[  
-  {  
-    "name":"Project #1",
-    "id":1,
-    "settings":[  
-      {  
-        "name":"Setting #1",
-        "project_id":1,
-        "id":1
-      },
-      {  
-        "name":"Setting #3",
-        "project_id":1,
-        "id":3
-      }
-    ],
-    "members":[  
-      {  
-        "name":"Member #1",
-        "project_id":1,
-        "id":1
-      },
-      {  
-        "name":"Member #3",
-        "project_id":1,
-        "id":3
-      }
-    ]
-  },
-  {  
-    "name":"Project #2",
-    "id":2,
-    "settings":[  
-      {  
-        "name":"Setting #2",
-        "project_id":2,
-        "id":2
-      }
-    ],
-    "members":[  
-      {  
-        "name":"Member #2",
-        "project_id":2,
-        "id":2
-      }
-    ]
-  }
+```
+Band Name: Abba
+Genre: Schlager
+Albums: [
+    {
+        "id": 3,
+        "name": "Super Trouper",
+        "bandId": 2,
+        "year": 1980
+    },
+    {
+        "id": 4,
+        "name": "Waterloo",
+        "bandId": 2,
+        "year": 1974
+    }
+]
+Band Name: Beatles
+Genre: Rock
+Albums: [
+    {
+        "id": 1,
+        "name": "Abbey Road",
+        "year": 1969,
+        "bandId": 1
+    },
+    {
+        "id": 2,
+        "name": "Let It Be",
+        "year": 1970,
+        "bandId": 1
+    }
 ]
 ```

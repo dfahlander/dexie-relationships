@@ -1,5 +1,5 @@
 import assert from 'assert'
-const DexieRelationships = require('../../src/index.js')
+import DexieRelationships from '../../src/index'
 
 describe('simple', function () {
     var Promise = Dexie.Promise;
@@ -71,7 +71,7 @@ describe('simple', function () {
         })
     })
 
-    describe('sample', function () {
+    describe('many-to-one', function () {
         it('should be possible to retrieve an entity with a collection of referring entities attached to it', function () {
             return db.bands.where('name').equals('Beatles').with({
                 albums: 'albums'
@@ -142,6 +142,26 @@ describe('simple', function () {
                 assert(!abba.albums, "Abba should not have the 'albums' foreign collection stored redundantly")
                 assert(!abba.genre, "Abba should not have the 'genre' foreign property stored redundantly")
             })
+        })
+    })
+
+    describe('Sample from README', ()=> {
+        it('should be possible to copy and paste the sample from README', ()=>{
+            return db.bands
+                .where('name').startsWithAnyOf('A', 'B')
+                .with({albums: 'albums', genre: 'genreId'}) // Resolves foreign keys into props
+                .then(rows => {
+                    // Print the result:
+                    rows.forEach (band => {
+                        console.log (`Band Name: ${band.name}`)
+                        console.log (`Genre: ${band.genre.name}`)
+                        console.log (`Albums: ${JSON.stringify(band.albums, null, 4)}`)
+                    });
+                }).then(()=>{
+                    assert (true, "Promise resolved and no exception occured")
+                }).catch (ex => {
+                    assert (false, "Something went wrong: " + (ex.stack || ex))
+                })
         })
     })
 })
