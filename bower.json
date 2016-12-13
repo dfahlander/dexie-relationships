@@ -1,7 +1,7 @@
 {
   "name": "dexie-relationships",
   "description": "Dexie relationship plugin",
-  "main": "dist/dexie-relationships.js",
+  "main": "dist/index.js",
   "authors": [
     "Ignas Bernotas"
   ],

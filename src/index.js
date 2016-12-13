@@ -164,4 +164,4 @@ const Relationships = (db) => {
     })
 }
 
-module.exports = Relationships
+export default Relationships
