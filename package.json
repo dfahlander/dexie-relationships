@@ -45,8 +45,5 @@
   "bugs": {
     "url": "https://github.com/ignasbernotas/dexie-relationships/issues"
   },
-  "homepage": "https://github.com/ignasbernotas/dexie-relationships#readme",
-  "dependencies": {
-    "babel-plugin-add-module-exports": "^0.2.1"
-  }
+  "homepage": "https://github.com/ignasbernotas/dexie-relationships#readme"
 }
