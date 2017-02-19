@@ -1,8 +1,10 @@
 (function (global, factory) {
-  typeof exports === 'object' && typeof module !== 'undefined' ? module.exports = factory() :
-  typeof define === 'function' && define.amd ? define(factory) :
-  (global.dexieRelationships = factory());
-}(this, (function () { 'use strict';
+  typeof exports === 'object' && typeof module !== 'undefined' ? module.exports = factory(require('dexie')) :
+  typeof define === 'function' && define.amd ? define(['dexie'], factory) :
+  (global.dexieRelationships = factory(global.Dexie));
+}(this, (function (Dexie) { 'use strict';
+
+Dexie = 'default' in Dexie ? Dexie['default'] : Dexie;
 
 var SchemaParser = function SchemaParser (schema) {
   this.schema = schema;
@@ -70,7 +72,6 @@ function isIndexableType (value) {
 }
 
 var Relationships = function (db) {
-  var Dexie = db.constructor;
   // Use Dexie.Promise to ensure transaction safety.
   var Promise = Dexie.Promise;
 
