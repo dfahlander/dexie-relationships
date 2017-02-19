@@ -8,5 +8,7 @@ export default {
   entry: './all-browser-tests.js',
   format: 'umd',
   dest: 'bundle.js',
+  external: ['dexie'],
+  globals: {dexie: 'Dexie'},
   plugins: [buble(), globals(), builtins(), uglify({}, minify)]
 };

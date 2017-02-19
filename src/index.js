@@ -1,8 +1,8 @@
+import Dexie from 'dexie'
 import SchemaParser from './schema-parser'
 import {isIndexableType} from './utils'
 
 const Relationships = (db) => {
-  const Dexie = db.constructor
   // Use Dexie.Promise to ensure transaction safety.
   const Promise = Dexie.Promise
 

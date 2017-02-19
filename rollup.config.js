@@ -5,8 +5,9 @@ export default {
   entry: 'src/index.js',
   format: 'umd',
   dest: 'dist/index.js',
+  external: ['dexie'],
   globals: {
-    Dexie: 'Dexie',
+    dexie: 'Dexie',
   },
   plugins: [ buble() ]
 };
