@@ -3,11 +3,12 @@
   "version": "1.2.2",
   "description": "Dexie relationship plugin",
   "main": "dist/index.js",
+  "typings": "dist/index.d.ts",
   "directories": {
     "test": "tests"
   },
   "peerDependencies": {
-    "dexie": "^2.0.0-beta.3"
+    "dexie": "^2.0.0-beta.10"
   },
   "devDependencies": {
     "buble": "^0.14.3",
