@@ -13,3 +13,7 @@ declare module 'dexie' {
         }
     }
 }
+
+declare var dexieRelationships: (db: Dexie) => void;
+
+export default dexieRelationships;
