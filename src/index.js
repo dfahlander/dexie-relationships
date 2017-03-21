@@ -106,34 +106,36 @@ const Relationships = (db) => {
           // Create a lookup by targetIndex (normally 'id')
           // and set the column onto the target
           let lookup = {}
-          rows.forEach(row => {
-            lookup[row[targetIndex]] = row
+          result.forEach(record => {
+            let foreignKey = record[foreignIndex]
+            if (foreignTable.oneToOne) {
+              lookup[foreignKey] = record
+            } else {
+              (lookup[foreignKey] = lookup[foreignKey] || [])
+                .push(record)
+            }
           })
 
           // Populate column on each row
-          result.forEach(record => {
-            let foreignKey = record[foreignIndex]
-            let row = lookup[foreignKey]
-            if (!row) {
+          rows.forEach(row => {
+            let foreignKey = row[targetIndex]
+            let record = lookup[foreignKey]
+            if (!record) {
               throw new Error(
                 `Could not lookup foreign key where ` +
                 `${tableName}.${foreignIndex} == ${baseTable}.${column}. ` +
                 `The content of the failing key was: ${JSON.stringify(foreignKey)}.`)
             }
 
-            if (foreignTable.oneToOne || !row.hasOwnProperty(column)) {
-              // Set it as a non-enumerable property so that the object can be safely put back
-              // to indexeddb without storing relations redundantly (IndexedDB will only store "own non-
-              // enumerable properties")
-              Object.defineProperty(row, column, {
-                value: foreignTable.oneToOne ? record : [record],
-                enumerable: false,
-                configurable: true,
-                writable: true
-              })
-            } else if (!foreignTable.oneToOne) {
-              row[column].push(record)
-            }
+            // Set it as a non-enumerable property so that the object can be safely put back
+            // to indexeddb without storing relations redundantly (IndexedDB will only store "own non-
+            // enumerable properties")
+            Object.defineProperty(row, column, {
+              value: record,
+              enumerable: false,
+              configurable: true,
+              writable: true
+            })
           })
         })
       }).then(() => rows)
