@@ -105,6 +105,23 @@ describe('simple', function () {
     })
   })
 
+  describe('one-to-many', () => {
+    it('should add association to all records when more than one record has the same association', ()=>{
+      return db.albums.with ({
+        band: 'bandId'
+      }).then (albums => {
+        assert (albums.length === 4, "Should retrieve four albums")
+
+        let bandIds = [1, 1, 2, 2];
+
+        albums.map((album, idx) => {
+          assert(album.band != null, "Each album should have a band")
+          assert(album.band.id === bandIds[idx], "Each album should be assigned the correct band")
+        })
+      })
+    })
+  })
+
   describe('Multiple foreign keys of different kind', ()=>{
     it('Should be possible to retrieve entities with oneToOne as well as manyToOne relations', ()=> {
       return db.bands.where('name').equals('Beatles').with({
