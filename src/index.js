@@ -29,7 +29,7 @@ const Relationships = (db) => {
     const databaseTables = db._allTables
 
     // this holds tables that have foreign keys pointing at the current table
-    let usableForeignTables = {}
+    let usableForeignTables = []
 
     // validate target tables and add them into our usable tables object
     Object.keys(relationships).forEach((column) => {
@@ -38,12 +38,12 @@ const Relationships = (db) => {
 
       if (matchingIndex && matchingIndex.hasOwnProperty('foreignKey')) {
         let index = matchingIndex
-        usableForeignTables[index.foreignKey.targetTable] = {
+        usableForeignTables.push({
           column: column,
           index: index.foreignKey.targetIndex,
           targetIndex: index.foreignKey.index,
           oneToOne: true
-        }
+        })
       } else {
         let table = tableOrIndex
 
@@ -62,22 +62,21 @@ const Relationships = (db) => {
           usableForeignTables[table] = {
             column: column,
             index: columns[0].index,
+            tableName: table,
             targetIndex: columns[0].targetIndex
           }
         }
       }
     })
 
-    let foreignTableNames = Object.keys(usableForeignTables)
-
     return this.toArray().then(rows => {
       //
       // Extract the mix of all related keys in all rows
       //
-      let queries = foreignTableNames
-        .map(tableName => {
+      let queries = usableForeignTables
+        .map(foreignTable => {
           // For each foreign table, query all items that any row refers to
-          let foreignTable = usableForeignTables[tableName]
+          let tableName = foreignTable.tableName
           let allRelatedKeys = rows
             .map(row => row[foreignTable.targetIndex])
             .filter(isIndexableType)
@@ -96,8 +95,8 @@ const Relationships = (db) => {
       // with its corresponding row and attach related items onto each row
       //
       return Promise.all(queryPromises).then(queryResults => {
-        foreignTableNames.forEach((tableName, idx) => {
-          let foreignTable = usableForeignTables[tableName]
+        usableForeignTables.forEach((foreignTable, idx) => {
+          let tableName = foreignTable.tableName
           let result = queryResults[idx]
           let targetIndex = foreignTable.targetIndex
           let foreignIndex = foreignTable.index
