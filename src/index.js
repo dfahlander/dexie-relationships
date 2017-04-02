@@ -41,6 +41,7 @@ const Relationships = (db) => {
         usableForeignTables.push({
           column: column,
           index: index.foreignKey.targetIndex,
+          tableName: index.foreignKey.targetTable,
           targetIndex: index.foreignKey.index,
           oneToOne: true
         })
