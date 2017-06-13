@@ -60,12 +60,12 @@ const Relationships = (db) => {
         let columns = databaseTables[table].schema.foreignKeys.filter(column => column.targetTable === baseTable)
 
         if (columns.length > 0) {
-          usableForeignTables[table] = {
+          usableForeignTables.push({
             column: column,
             index: columns[0].index,
             tableName: table,
             targetIndex: columns[0].targetIndex
-          }
+          })
         }
       }
     })
