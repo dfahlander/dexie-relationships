@@ -1,6 +1,6 @@
 {
   "name": "dexie-relationships",
-  "version": "1.2.6",
+  "version": "1.2.7",
   "description": "Dexie relationship plugin",
   "main": "dist/index.js",
   "typings": "dist/index.d.ts",
