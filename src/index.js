@@ -166,4 +166,7 @@ const Relationships = (db) => {
     })
 }
 
+// https://github.com/dfahlander/Dexie.js/issues/625:
+Relationships.default = Relationships
+
 export default Relationships
