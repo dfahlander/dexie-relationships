@@ -3,7 +3,7 @@ class SchemaParser {
   /**
    * Schema parser
    *
-   * @param schema
+   * @param {Object} schema
    */
   constructor (schema) {
     this.schema = schema
@@ -12,19 +12,18 @@ class SchemaParser {
   /**
    * Extracts foreign keys from the schema
    *
-   * @returns Object
+   * @return {Object}
    */
   getForeignKeys () {
-    let foreignKeys = {}
+    const foreignKeys = {}
 
     Object.keys(this.schema).forEach(table => {
-      let indexes = this.schema[table].split(',')
-
-      foreignKeys[table] = indexes
-        .filter(idx => idx.indexOf('->') !== -1)
+      foreignKeys[table] = this.schema[table]
+        .split(/\s*,\s*/)
+        .filter(idx => !idx.includes('->'))
         .map(idx => {
           // split the column and foreign table info
-          let [column, target] = idx.split('->').map(x => x.trim())
+          const [column, target] = idx.split(/\s*->\s*/)
 
           return {
             index: column,
@@ -43,13 +42,14 @@ class SchemaParser {
    * @returns Object
    */
   getCleanedSchema () {
-    let schema = {}
+    const schema = {}
 
     Object.keys(this.schema).forEach(table => {
-      let indexes = this.schema[table].split(',')
-
       // Remove foreign keys syntax before calling the original method
-      schema[table] = indexes.map(idx => idx.split('->')[0].trim()).join(',')
+      schema[table] = this.schema[table]
+        .split(/\s*,\s*/)
+        .map(idx => idx.split(/\s*->\s*/)[0])
+        .join(', ')
     })
 
     return schema
