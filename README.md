@@ -1,3 +1,5 @@
+[![Build Status](https://travis-ci.org/ignasbernotas/dexie-relationships.svg?branch=master)](https://travis-ci.org/ignasbernotas/dexie-relationships)
+
 Dexie.js relationship plugin
 ========
 
