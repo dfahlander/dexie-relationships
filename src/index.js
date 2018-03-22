@@ -120,7 +120,7 @@ const Relationships = (db) => {
           rows.forEach(row => {
             let foreignKey = row[targetIndex]
             let record = lookup[foreignKey]
-            if (!record) {
+            if (foreignKey !== null && foreignKey !== undefined && !record) {
               throw new Error(
                 `Could not lookup foreign key where ` +
                 `${tableName}.${foreignIndex} == ${baseTable}.${column}. ` +

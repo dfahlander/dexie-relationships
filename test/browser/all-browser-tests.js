@@ -66,6 +66,11 @@ describe('simple', function () {
             name: 'Waterloo',
             bandId: 2,
             year: 1974
+          }, {
+            id: 5,
+            name: 'No band',
+            bandId: null,
+            year: 1974
           }])
         })
       })
@@ -91,9 +96,10 @@ describe('simple', function () {
       return db.albums.where('year').between(1970, 1974, true, true).with ({
         band: 'bandId'
       }).then (albums => {
-        assert (albums.length === 2, "Should retrieve two albums between 1970 to 1974")
+        assert (albums.length === 3, "Should retrieve three albums between 1970 to 1974")
         let letItBe = albums[0],
-          waterloo = albums[1]
+          waterloo = albums[1],
+          noBand = albums[2];
         assert (letItBe.name === "Let It Be", "First album should be 'Let It Be'")
         assert (!!letItBe.band, "Should get the band resolved with the query")
         assert (letItBe.band.name === "Beatles", "The band should be Beatles")
@@ -101,6 +107,9 @@ describe('simple', function () {
         assert (waterloo.name === "Waterloo", "Second album should be 'Waterloo'")
         assert (!!waterloo.band, "Should get the band resolved with the query")
         assert (waterloo.band.name === "Abba", "The band should be Abba")
+
+        assert (noBand.name === "No band")
+        assert (!noBand.band, null)
       })
     })
   })
@@ -110,13 +119,17 @@ describe('simple', function () {
       return db.albums.with ({
         band: 'bandId'
       }).then (albums => {
-        assert (albums.length === 4, "Should retrieve four albums")
+        assert (albums.length === 5, "Should retrieve five albums")
 
-        let bandIds = [1, 1, 2, 2];
+        let bandIds = [1, 1, 2, 2, null];
 
         albums.map((album, idx) => {
-          assert(album.band != null, "Each album should have a band")
-          assert(album.band.id === bandIds[idx], "Each album should be assigned the correct band")
+          if (bandIds[idx] !== null) {
+            assert(album.band != null, "Album should have a band")
+            assert(album.band.id === bandIds[idx], "Each album should be assigned the correct band")
+          } else {
+            assert(!album.band, "Album should not have a band")
+          }
         })
       })
     })
