@@ -18,7 +18,7 @@
     "eslint-config-standard": "^6.2.0",
     "eslint-plugin-promise": "^3.3.0",
     "eslint-plugin-standard": "^2.0.1",
-    "mocha": "^3.1.2",
+    "mocha": "^6.2.1",
     "reify": "^0.4.4",
     "rollup": "^0.37.0",
     "rollup-plugin-buble": "^0.14.0",
@@ -31,7 +31,8 @@
     "build": "./node_modules/.bin/rollup -c && ./node_modules/.bin/rollup -c rollup.minify.config.js",
     "test": "npm run eslint && npm run mocha && cd test/browser && ../../node_modules/.bin/rollup -c",
     "eslint": "./node_modules/.bin/eslint src",
-    "mocha": "./node_modules/.bin/mocha --require reify test"
+    "mocha": "./node_modules/.bin/mocha --require reify test",
+    "prepare": "npm run build"
   },
   "repository": {
     "type": "git",

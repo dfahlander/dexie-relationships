@@ -84,8 +84,8 @@ const Relationships = (db) => {
 
           // Build the Collection to retrieve all related items
           return databaseTables[tableName]
-              .where(foreignTable.index)
-              .anyOf(allRelatedKeys)
+            .where(foreignTable.index)
+            .anyOf(allRelatedKeys)
         })
 
       // Execute queries in parallell
@@ -119,7 +119,7 @@ const Relationships = (db) => {
           // Populate column on each row
           rows.forEach(row => {
             let foreignKey = row[targetIndex]
-            let record = lookup[foreignKey]
+            let record = lookup[foreignKey] || []
             if (foreignKey !== null && foreignKey !== undefined && !record) {
               throw new Error(
                 `Could not lookup foreign key where ` +
